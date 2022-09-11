@@ -13,7 +13,8 @@ Helge Wrede, Alexander Schultheiß and Lukas Simon.
 
 In comparison with other crates, `bloomy` combines the following advantages:
 * Computationally efficient by using a double hashing technique pioneered
-by Adam Kirsch and Michael Mitzenmacher.
+by Adam Kirsch and Michael Mitzenmacher. You can find a copy of the paper in
+the `docs/` folder.
 * Has only a single dependency: `siphasher`, from which multiple hashers are
 derived, and hence doesn't depend on the `bitvec` or `bit-vec` crates.
 * Supports *union* and *intersection* operations.
