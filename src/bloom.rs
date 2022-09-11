@@ -14,7 +14,7 @@ use siphasher::sip::SipHasher13;
 use crate::bitvec::BitVec;
 
 /// The default false positive probability value, 1%.
-pub const DEFAULT_FALSE_POSITIVE: f64 = 0.01;
+pub const DEFAULT_FALSE_POSITIVE_RATE: f64 = 0.01;
 
 /// `ln` squared.
 const LN_SQR: f64 = f64::consts::LN_2 * f64::consts::LN_2;
@@ -42,7 +42,25 @@ impl<K: Hash> BloomFilter<K> {
     /// Return a new Bloom filter with a given approximate item capacity.
     /// The default false positive probability is set and defined by [`DEFAULT_FALSE_POS`].
     pub fn new(capacity: usize) -> BloomFilter<K> {
-        BloomFilter::with_rate(capacity, DEFAULT_FALSE_POSITIVE)
+        BloomFilter::with_rate(capacity, DEFAULT_FALSE_POSITIVE_RATE)
+    }
+
+    /// Return a new Bloom filter given a size in bytes for the filter.
+    pub fn with_size(nbytes: usize) -> BloomFilter<K> {
+        let nbits = nbytes * 8;
+        let capacity = optimal_capacity(nbits, DEFAULT_FALSE_POSITIVE_RATE);
+        let nhashes = optimal_hashes(nbits, capacity);
+        let hashers = [
+            SipHasher13::new_with_key(&HASHER_SEEDS[0]),
+            SipHasher13::new_with_key(&HASHER_SEEDS[1]),
+        ];
+
+        BloomFilter {
+            bits: BitVec::new(nbits as usize),
+            nhashes,
+            hashers,
+            key: PhantomData,
+        }
     }
 
     /// Return a new Bloom filter with a given approximate item capacity
@@ -92,6 +110,11 @@ impl<K: Hash> BloomFilter<K> {
     /// Set all bits to zero.
     pub fn clear(&mut self) {
         self.bits.clear();
+    }
+
+    /// Return the number of bits in this filter.
+    pub fn bits(&self) -> usize {
+        self.bits.len()
     }
 
     /// Count the approximate number of items in the filter.
@@ -189,15 +212,20 @@ impl<K: Hash> BloomFilter<K> {
 
 /// Return the optimal bit vector size for a Bloom filter given an approximate
 /// size and a desired false positive rate.
-fn optimal_bits(capacity: usize, fp_rate: f64) -> usize {
+pub fn optimal_bits(capacity: usize, fp_rate: f64) -> usize {
     (-((fp_rate.ln() * (capacity as f64)) / LN_SQR)).ceil() as usize
+}
+
+/// Return the optimal item capacity of a filter given a bit vector size and false positive rate.
+pub fn optimal_capacity(nbits: usize, fp_rate: f64) -> usize {
+    ((-(nbits as f64) * LN_SQR) / fp_rate.ln()).round() as usize
 }
 
 /// Return the optimal number of hash functions for a Bloom filter given a
 /// bit vector size and an approximate set size.
 ///
 /// Also called `k`.
-fn optimal_hashes(nbits: usize, capacity: usize) -> usize {
+pub fn optimal_hashes(nbits: usize, capacity: usize) -> usize {
     (((nbits / capacity) as f64) * f64::consts::LN_2).ceil() as usize
 }
 
@@ -253,6 +281,13 @@ mod tests {
                 assert_eq!(exists, true, "item {} resulted in a false negative", item);
             }
         }
+    }
+
+    #[test]
+    fn test_with_size() {
+        let bf = BloomFilter::<String>::with_size(32 * 1024); // 32 KB
+
+        assert_eq!(bf.bits(), 32 * 1024 * 8);
     }
 
     #[test]
@@ -371,5 +406,12 @@ mod tests {
         assert_eq!(optimal_hashes(67, 10), 5);
         assert_eq!(optimal_hashes(47926, 5000), 7);
         assert_eq!(optimal_hashes(958506, 100000), 7);
+    }
+
+    #[test]
+    fn test_optimal_capacity() {
+        assert_eq!(optimal_capacity(optimal_bits(128, 0.01), 0.01), 128);
+        assert_eq!(optimal_capacity(optimal_bits(84198, 0.03), 0.03), 84198);
+        assert_eq!(optimal_capacity(optimal_bits(958472, 0.04), 0.04), 958472);
     }
 }
