@@ -1,0 +1,28 @@
+[package]
+name = "bloomy"
+version = "1.0.0"
+authors = [
+  "Aleksandr Bezobchuk <aleks.bezobchuk@gmail.com>",
+  "Alexis Sellier <self@cloudhead.io>"
+]
+description = "A simple Bloom filter using only two hash functions"
+homepage = "https://docs.rs/bloomy/"
+documentation = "https://docs.rs/bloomy/"
+edition = "2021"
+readme = "README.md"
+keywords = ["bloom", "filter", "bloomfilter", "bloomfilters"]
+license = "MIT"
+
+[badges]
+maintenance = { status = "passively-maintained" }
+
+[dependencies]
+siphasher = { version = "0.3.10" }
+
+[dev-dependencies]
+fastrand = { version = "1.8.0" }
+criterion = { version = "0.4.0", default-features = false }
+
+[[bench]]
+name = "benchmarks"
+harness = false
