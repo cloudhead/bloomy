@@ -157,7 +157,7 @@ impl<K: Hash> BloomFilter<K> {
             self.is_comparable(other),
             "unable to union filters with different configurations"
         );
-        let bits = self.as_ref().union(other.as_ref());
+        let bits = self.bits.union(&other.bits);
 
         Self {
             bits,
@@ -173,7 +173,7 @@ impl<K: Hash> BloomFilter<K> {
             self.is_comparable(other),
             "unable to intersect filters with different configurations"
         );
-        let bits = self.as_ref().intersection(other.as_ref());
+        let bits = self.bits.intersection(&other.bits);
 
         Self {
             bits,
@@ -189,6 +189,11 @@ impl<K: Hash> BloomFilter<K> {
             && self.bits.len() == other.bits.len()
             && self.hashers[0].keys() == other.hashers[0].keys()
             && self.hashers[1].keys() == other.hashers[1].keys()
+    }
+
+    /// Return the underlying bytes storage.
+    pub fn as_bytes(&self) -> &[u8] {
+        self.bits.as_bytes()
     }
 
     fn sip_hashes(&self, item: &K) -> (u64, u64) {
@@ -229,9 +234,9 @@ pub fn optimal_hashes(nbits: usize, capacity: usize) -> usize {
     (((nbits / capacity) as f64) * f64::consts::LN_2).ceil() as usize
 }
 
-impl<K> AsRef<BitVec> for BloomFilter<K> {
-    fn as_ref(&self) -> &BitVec {
-        &self.bits
+impl<K> AsRef<[u8]> for BloomFilter<K> {
+    fn as_ref(&self) -> &[u8] {
+        self.bits.as_bytes()
     }
 }
 

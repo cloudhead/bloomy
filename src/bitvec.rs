@@ -122,6 +122,11 @@ impl BitVec {
             nbits: self.nbits,
         }
     }
+
+    /// Return the underlying bytes storage.
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.bytes
+    }
 }
 
 impl Debug for BitVec {
