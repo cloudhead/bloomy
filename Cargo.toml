@@ -1,6 +1,6 @@
 [package]
 name = "bloomy"
-version = "1.0.0"
+version = "1.0.1"
 authors = [
   "Aleksandr Bezobchuk <aleks.bezobchuk@gmail.com>",
   "Alexis Sellier <self@cloudhead.io>"
