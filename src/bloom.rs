@@ -235,6 +235,14 @@ impl<K> AsRef<BitVec> for BloomFilter<K> {
     }
 }
 
+impl<K> PartialEq for BloomFilter<K> {
+    fn eq(&self, other: &Self) -> bool {
+        self.bits == other.bits && self.nhashes == other.nhashes
+    }
+}
+
+impl<K> Eq for BloomFilter<K> {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
