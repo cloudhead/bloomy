@@ -117,6 +117,11 @@ impl<K: Hash> BloomFilter<K> {
         self.bits.len()
     }
 
+    /// Number of hashes used (`k` parameter).
+    pub fn hashes(&self) -> usize {
+        self.nhashes
+    }
+
     /// Count the approximate number of items in the filter.
     pub fn count(&self) -> usize {
         let nbits = self.bits.len() as f64;
@@ -211,7 +216,7 @@ impl<K: Hash> BloomFilter<K> {
 
     fn bloom_hash(&self, h1: u64, h2: u64, i: u64) -> u64 {
         let r = h1.wrapping_add(i.wrapping_mul(h2)).wrapping_add(i.pow(3));
-        r % self.bits.len() as u64
+        r % self.bits() as u64
     }
 }
 
@@ -247,6 +252,31 @@ impl<K> PartialEq for BloomFilter<K> {
 }
 
 impl<K> Eq for BloomFilter<K> {}
+
+impl<K> From<Vec<u8>> for BloomFilter<K> {
+    fn from(other: Vec<u8>) -> BloomFilter<K> {
+        let bits = BitVec::from(other);
+        let capacity = optimal_capacity(bits.len(), DEFAULT_FALSE_POSITIVE_RATE);
+        let nhashes = optimal_hashes(bits.len(), capacity);
+        let hashers = [
+            SipHasher13::new_with_key(&HASHER_SEEDS[0]),
+            SipHasher13::new_with_key(&HASHER_SEEDS[1]),
+        ];
+
+        Self {
+            bits,
+            nhashes,
+            hashers,
+            key: PhantomData,
+        }
+    }
+}
+
+impl<K> From<BloomFilter<K>> for Vec<u8> {
+    fn from(other: BloomFilter<K>) -> Vec<u8> {
+        other.bits.into()
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -426,5 +456,22 @@ mod tests {
         assert_eq!(optimal_capacity(optimal_bits(128, 0.01), 0.01), 128);
         assert_eq!(optimal_capacity(optimal_bits(84198, 0.03), 0.03), 84198);
         assert_eq!(optimal_capacity(optimal_bits(958472, 0.04), 0.04), 958472);
+    }
+
+    #[test]
+    fn test_raw() {
+        let size = 2 ^ 14;
+        let mut a = BloomFilter::<String>::with_size(size);
+
+        for item in items(2 ^ 10).iter() {
+            a.insert(item);
+        }
+
+        let bytes: Vec<u8> = a.clone().into();
+        let b = BloomFilter::from(bytes);
+
+        assert_eq!(a, b);
+        assert_eq!(a.bits(), b.bits());
+        assert_eq!(a.hashes(), b.hashes());
     }
 }

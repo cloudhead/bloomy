@@ -129,6 +129,20 @@ impl BitVec {
     }
 }
 
+impl From<Vec<u8>> for BitVec {
+    fn from(bytes: Vec<u8>) -> Self {
+        let nbits = bytes.len() * 8;
+
+        Self { bytes, nbits }
+    }
+}
+
+impl From<BitVec> for Vec<u8> {
+    fn from(other: BitVec) -> Vec<u8> {
+        other.bytes
+    }
+}
+
 impl Debug for BitVec {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let bits: String = (0..self.nbits)
