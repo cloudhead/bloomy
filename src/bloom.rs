@@ -56,7 +56,7 @@ impl<K: Hash> BloomFilter<K> {
         ];
 
         BloomFilter {
-            bits: BitVec::new(nbits as usize),
+            bits: BitVec::new(nbits),
             nhashes,
             hashers,
             key: PhantomData,
@@ -74,7 +74,7 @@ impl<K: Hash> BloomFilter<K> {
         ];
 
         BloomFilter {
-            bits: BitVec::new(nbits as usize),
+            bits: BitVec::new(nbits),
             nhashes,
             hashers,
             key: PhantomData,
